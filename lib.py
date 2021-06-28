@@ -58,14 +58,21 @@ class ShapeModel:
         emb2 = emb2 / np.linalg.norm(emb2)
         return np.dot(emb1,emb2)
     
-    def predict_emb(self, emb: np.array) -> str:
+    def predict_emb(self, emb: np.array) -> Dict:
         result = dict()
         for name, feature in zip(self.samples_class, self.samples_feature):
             result[name] = self.cosine_sim(emb, feature)
             
-        max_candidate = max(result.keys(), key= lambda x: result[x])
+        sorted_key = sorted(result.keys(), key=lambda x: -result[x])
+            
         
-        return max_candidate
+        max_candidate = sorted_key[0]
+        top5 = sorted_key[:5]
+        
+        return {
+            'class': max_candidate,
+            'top5': top5
+        }
     
     def __call__(self, image: Image) -> Dict:
         """Do prediction
@@ -74,11 +81,11 @@ class ShapeModel:
             image (Image): Pillow Image, or numpy convertible image type
 
         Returns:
-            Dict: dict(class=class_name)
+            Dict: dict(class=class_name, top5=[...])
         """
         emb = self.model.extract_feature(image = np.array(image), do_extract=False)
         
-        class_name = self.predict_emb(emb)
+        result = self.predict_emb(emb)
         
-        return {'class': class_name}
+        return result
         
